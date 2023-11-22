@@ -22,6 +22,9 @@ class CategorieSerializer (SerializadorPadre):
       fields = '__all__'
 
 class ProductSerializer (SerializadorPadre):
+   supplierid = SupplierSerializer(many=False,required=False)
+   categoryid = CategorieSerializer(many=False, required=False)
+
    class Meta:
       model = Products
       fields = '__all__'
@@ -43,10 +46,8 @@ class EmployeeSerializer (SerializadorPadre):
       model = Employees
       fields = '__all__'
 
-
-#class Punto1Serializer(serializers.Serializer):
-#    id = serializers.IntegerField()
-#    apellido = serializers.CharField(max_length=50)
-#    descripcion = CondicionIvaSerializer(many=False)
-#    telefono = serializers.IntegerField()
-#    nuevoTelefono = serializers.IntegerField()
+class Punto1Serializer(serializers.Serializer):
+    id = serializers.CharField(max_length=5)
+    nombre = serializers.CharField(max_length=50)
+    nombre_compañia = serializers.CharField(max_length=50)
+    telefono = serializers.CharField(max_length=20)

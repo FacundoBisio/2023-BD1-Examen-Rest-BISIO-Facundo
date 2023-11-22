@@ -1,24 +1,43 @@
+from django.utils import timezone
+from datetime import datetime
 from .serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from .models import Customers, Suppliers, Categories, Products, Orders, Orderdetails, Employees
 
+@api_view(['GET'])
+def getRoutes(request):
+    routes = [{'Endpoint':'/customer',
+               'method':'GET',
+               'body':None,
+               'description':'Regresa todos los customer'
+               },
+               {'Endpoint':'/customer',
+               'method':'POST',
+               'body':{
+                   "customerid":"AAAAA",
+                   "companyname":"nombre compañia"
+               },
+               'description':'Genera un nuevo customer'
+               }]
+    return Response(routes)
 
 # --- COSTUMERS ------------------------------------------------------------------------------------
 @api_view(["GET", "POST"])
 def getAllCustomers(request):
     if request.method == "GET":
-        #customers = Customers.objects.all()         
-        customers = Customers.objects.filter(contactname__startswith = 'M')[:4]
+        customers = Customers.objects.all()       
+        #customers = Customers.objects.filter(contactname__startswith = 'M').order_by('contacttitle')[:4]
+        #customers = Customers.objects.filter(contactname__startswith = 'A', contacttitle = 'Owner')
         customersSerializers = CustomerSerializer(customers, many=True)
         return Response(customersSerializers.data, status=status.HTTP_200_OK)
     elif request.method == "POST":
         customerNuevo = CustomerSerializer(data = request.data)
         if customerNuevo.is_valid():
             customerNuevo.save()
-            return Response(customerNuevo.data, status=status.HTTP_200_OK)
+            return Response(customerNuevo.data, status=status.HTTP_201_CREAT)
         return Response(customerNuevo.errors ,status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(["GET", "PUT", "DELETE"])
@@ -31,7 +50,9 @@ def getCustomerById(request, pk):
         serializer = CustomerSerializer(customer)
         return Response(serializer.data, status=status.HTTP_200_OK)
     if request.method == 'PUT':
+
         request.data['customerid'] = pk
+        request.data['companyname'] = customer.companyname 
     
         serializer = CustomerSerializer(customer, data=request.data)
         if serializer.is_valid():
@@ -115,8 +136,9 @@ def getCategoryById(request, pk):
 # --- PRODUCTS ------------------------------------------------------------------------------------
 @api_view(["GET", "POST"])
 def getAllProducts(request):
-    if request.method == "GET":         
-        products = Products.objects.all()
+    if request.method == "GET":
+        #products = Products.objects.all()         
+        products = Products.objects.filter(supplierid__companyname__startswith = 'F')[:2]
         productSerializers = ProductSerializer(products, many=True)
         return Response(productSerializers.data, status=status.HTTP_200_OK)
     elif request.method == "POST":
@@ -264,35 +286,47 @@ def getEmployeeById(request, pk):
         return Response(status=status.HTTP_200_OK)
 
 # ---------------------------------------- PRUEBAS -------------------------------------------
+#ESTRUCTURAS
+@api_view(['GET'])
+def punto1(request):
+    customers = Customers.objects.all()
+    estructura = {"id":0,
+                "nombre":None,
+                "nombre compañia":None,
+                "telefono":None}
+    resultados =[ ]
+    for customer in customers:
+        resultado = {
+            "id": customer.customerid,
+            "nombre": customer.contactname,
+            "nombre_compañia": customer.companyname,
+            "telefono": customer.phone}
+        resultados.append(resultado)
+    
+    serializado = Punto1Serializer(resultados,many = True)
+    return Response(serializado.data,status=status.HTTP_200_OK)
 
-@api_view(["POST"])
-def create_order_with_details(request):
-    order_serializer = OrderSerializer(data=request.data)
-    if order_serializer.is_valid():
-        order = order_serializer.save()
-        order_details_data = request.data.get('order_details', [])
-        for order_detail_data in order_details_data:
-            order_detail_data['order'] = order.id
-            order_detail_serializer = OrderDetailSerializer(data=order_detail_data)
-            if order_detail_serializer.is_valid():
-                order_detail_serializer.save()
-            else:
-                order.delete()
-                return Response(order_detail_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response(order_serializer.data, status=status.HTTP_201_CREATED)
-    return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#FECHA RANGOS
+@api_view(['GET'])
+def getOrderByDate(request):
+    start_date_str = request.GET.get('start_date', '1998-01-01')
+    end_date_str = request.GET.get('end_date', '2100-12-31')
 
-@api_view(["GET"])
-def get_orders_with_details(request):
-    orders = Order.objects.all()
-    order_serializer = OrderSerializer(orders, many=True)
-    return Response(order_serializer.data, status=status.HTTP_200_OK)
+    # Convierte las cadenas de fecha a objetos de fecha
+    start_date = timezone.make_aware(datetime.strptime(start_date_str, "%Y-%m-%d"))
+    end_date = timezone.make_aware(datetime.strptime(end_date_str, "%Y-%m-%d"))
+
+    orders = Orders.objects.filter(orderdate__range=[start_date, end_date])
+    serializados = OrderSerializer(orders, many=True)
+    return Response(serializados.data, status=status.HTTP_200_OK)
+
 
 #clientes = Clientes.objects.all()[:4]
 #clientes = Clientes.objects.all().order_by('nombre', 'altura')
 #clientes = Clientes.objects.all()
 #clientes = Clientes.objects.filter(apellido='ALONSO')
 #clientes = Clientes.objects.filter(cod_cliente__gte=5)
+#clientes = Clientes.objects.filter(cod_cliente__lt=10)
 #clientes = Clientes.objects.filter(apellido__startswith = 'A')
 #clientes = Clientes.objects.filter(nombre__startswith = 'A', cod_condicion_iva__gte=2 )
 #clientes = Clientes.objects.filter(Q(apellido__startswith = 'M') |Q(apellido__startswith = 'C') )

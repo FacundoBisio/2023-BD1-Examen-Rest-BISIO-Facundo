@@ -54,6 +54,12 @@ class Customers(models.Model):
     class Meta:
         managed = False
         db_table = 'Customers'
+    
+    def esMayor(self, mayorQue):
+        return self.phone > mayorQue
+
+    def esPar(self):
+        return self.customerid % 2 == 0
 
 
 class Employeeterritories(models.Model):
@@ -90,6 +96,9 @@ class Employees(models.Model):
     class Meta:
         managed = False
         db_table = 'Employees'
+    
+    def nombreCompleto(self):
+        return self.firstname + " " + self.lastname
 
 
 class Orderdetails(models.Model):
