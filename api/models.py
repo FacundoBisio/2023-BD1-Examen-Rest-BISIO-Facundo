@@ -102,7 +102,7 @@ class Employees(models.Model):
 
 
 class Orderdetails(models.Model):
-    orderid = models.OneToOneField('Orders', models.CASCADE, db_column='OrderID', primary_key=True)  # Field name made lowercase. The composite primary key (OrderID, ProductID) found, that is not supported. The first column is selected.
+    orderid = models.ForeignKey('Orders', models.CASCADE, db_column='OrderID', primary_key=True)  # Field name made lowercase. The composite primary key (OrderID, ProductID) found, that is not supported. The first column is selected.
     productid = models.ForeignKey('Products', models.CASCADE, db_column='ProductID')  # Field name made lowercase.
     unitprice = models.DecimalField(db_column='UnitPrice', max_digits=10, decimal_places=4)  # Field name made lowercase.
     quantity = models.SmallIntegerField(db_column='Quantity')  # Field name made lowercase.
@@ -112,6 +112,8 @@ class Orderdetails(models.Model):
         managed = False
         db_table = 'OrderDetails'
         unique_together = (('orderid', 'productid'),)
+    def subTotal(self):
+        return self.unitprice * self.quantity
 
 
 class Orders(models.Model):
@@ -133,6 +135,9 @@ class Orders(models.Model):
     class Meta:
         managed = False
         db_table = 'Orders'
+
+    def Total(self, arrive):
+        return 
 
 
 class Products(models.Model):

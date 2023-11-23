@@ -16,17 +16,27 @@ class SupplierSerializer(SerializadorPadre):
         model = Suppliers
         fields = '__all__'
 
+class EmployeeSerializer (SerializadorPadre):
+   class Meta:
+      model = Employees
+      fields = '__all__'
+
 class CategorieSerializer (SerializadorPadre):
    class Meta:
       model = Categories
       fields = '__all__'
 
 class ProductSerializer (SerializadorPadre):
-   supplierid = SupplierSerializer(many=False, required=False)
    categoryid = CategorieSerializer(many=False, required=False)
 
    class Meta:
       model = Products
+      fields = '__all__'
+
+class OrderSerializer(SerializadorPadre):
+   employeeid = EmployeeSerializer(many=False, required=False)
+   class Meta:
+      model = Orders
       fields = '__all__'
 
 class OrderdetailSerializer (SerializadorPadre):
@@ -34,23 +44,19 @@ class OrderdetailSerializer (SerializadorPadre):
       model = Orderdetails
       fields = '__all__'
 
-class OrderSerializer(SerializadorPadre):
-   order_details = OrderdetailSerializer(many=True, read_only=True)
-
-   class Meta:
-      model = Orders
-      fields = '__all__'
-
-class EmployeeSerializer (SerializadorPadre):
-   class Meta:
-      model = Employees
-      fields = '__all__'
-
 class EstructuraSerializer(serializers.Serializer):
     id = serializers.CharField(max_length=5)
     nombre = serializers.CharField(max_length=50)
     nombre_compañia = serializers.CharField(max_length=50)
     telefono = serializers.CharField(max_length=20)
+
+class TodoSerializer (SerializadorPadre):
+   orderid = OrderSerializer(many=False, required=False)
+   productid = ProductSerializer(many=False, required=False)
+
+   id = serializers.IntegerField()
+   nombre = serializers.CharField()
+   category = serializers.IntegerField()
 
 
 class Punto1Serializer(serializers.Serializer):

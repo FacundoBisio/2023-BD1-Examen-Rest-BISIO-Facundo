@@ -27,7 +27,10 @@ urlpatterns = [
     #pruebas
     path('estructura/', getEstructura),
     path('fecha/', getOrderByDate),
-    path('punto1/', punto1),
-    path('filtro3/', filtro3),
+    path('punto1/', probandoPunto1),
+    path('filtro3/', probandoFiltro3),
     path('update/', updateFiltro),
+
+    #examen
+    path('prueba1/', getEmployees)
 ]

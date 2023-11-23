@@ -325,7 +325,7 @@ def getOrderByDate(request):
 
 #
 @api_view(['GET'])
-def punto1(request):
+def probandoPunto1(request):
     letra = request.query_params.get("letter")
     year = request.query_params.get("year")
 
@@ -344,11 +344,12 @@ def punto1(request):
     return Response(serializados.data)
 
 @api_view(["GET", 'UPDATE'])
-def filtro3(request):
+def probandoFiltro3(request):
 
     employees = Employees.objects.filter(Q(country__icontains='a') | Q(country__icontains='e') | Q(country__icontains='i') | Q(country__icontains='o') | Q(country__icontains='u'), salary__gt=2800, birthdate__lt=datetime(1990, 1, 1))
-
-    employees.update(salary=5555)
+    employees.update(salary=3000)
+    # 2954.55
+    # 3119.15
 
     employeeSerializers = EmployeeSerializer(employees, many=True)
     return Response(employeeSerializers.data, status=status.HTTP_200_OK)
@@ -378,12 +379,116 @@ def updateFiltro(request):
     serializados = Filtro4Serializer(resultados, many=True)
     return Response(serializados.data)
 
+# Obtener todos los Empleados dados una Categoría (Categories.CategoryID) y una cantidad esperada de ganancias.
+@api_view(["GET"])
+def getEmployees(request):
+    category_id = request.GET.get('categoryid')
+    ventas_min = request.GET.get('ventasmin')
+
+    try:
+        
+        category = YourCategoryModel.objects.get(CategoryID=category_id)
+    except YourCategoryModel.DoesNotExist:
+        return JsonResponse({"error": "Categoría no encontrada"}, status=404)
+
+    
+    end_date = datetime.now().replace(day=1) - timedelta(days=1)
+    start_date = end_date - timedelta(days=90)
+
+    
+    Employees = Employees.objects.filter(
+        orders__orderdetails__product__category=category,
+        orders__orderdetails__unitprice__gt=0,
+        orders__orderdetails__quantity__gt=0,
+        orders__orderdate__range=[start_date, end_date]
+    ).annotate(ganancias_totales=Sum('orders__orderdetails__unitprice' * 'orders__orderdetails__quantity'))
+
+    Employees = Employees.filter(ganancias_totales__gt=ventas_min)
+
+    if Employees.exists():
+        
+        Employees = Employees.order_by('-ganancias_totales')
+
+        
+        response_data = [
+            {
+                "EmployeeID": employee.EmployeeID,
+                "NombreCompleto": employee.full_name(),
+                "GananciasTotales": employee.ganancias_totales,
+                "HireDate": employee.hiredate
+            }
+            for employee in employees
+        ]
+
+        return JsonResponse(response_data, status=200)
+    else:
+        return JsonResponse({}, status=204)
+
+
+
+@api_view(["POST", "PUT"])
+def update_products(request):
+    fecha_inicio = request.POST.get('fechaInicio')
+    category_id = request.POST.get('CategoryID')
+    ventas_requeridas = request.POST.get('ventasRequeridas')
+    aumento = request.POST.get('aumento')
+    shipper_id = request.POST.get('ShipperID')
+
+    try:
+        category = Category.objects.get(CategoryID=category_id)
+        shipper = Shipper.objects.get(ShipperID=shipper_id)
+    except (Category.DoesNotExist, Shipper.DoesNotExist):
+        return JsonResponse({"error": "Categoría o Shipper no encontrados"}, status=404)
+
+    
+    products = Product.objects.filter(
+        category=category,
+        orderdetails__order__orderdate__range=[fecha_inicio, datetime.now()],
+    ).annotate(ventas_totales=Sum('orderdetails__unitprice' * 'orderdetails__quantity'))
+
+    products = products.filter(ventas_totales__gt=ventas_requeridas)
+
+    if products.exists():
+        for product in products:
+          
+            product.unitprice += product.unitprice * aumento
+            if product.ventas_totales == 2 * ventas_requeridas:
+                product.unitprice += product.unitprice * aumento * 2
+            elif product.ventas_totales < ventas_requeridas / 2:
+                product.discontinued = 1
+
+            
+            if shipper.name.startswith('United'):
+                product.ganancia = product.unitprice * product.ventas_totales * 0.8
+
+
+            product.save()
+
+        response_data = [
+            {
+                "ProductID": product.ProductID,
+                "Category": {
+                    "CategoryID": product.category.CategoryID,
+                    "CategoryName": product.category.CategoryName,
+                  
+                },
+                
+                "PreviousPrice": product.unitprice / (1 + aumento),
+                "PercentageIncrease": aumento * 100,
+            }
+            for product in products
+        ]
+
+        return Response(response_data, status=200)
+    else:
+        return Response({}, status=204)
+
 
 #clientes = Clientes.objects.all()[:4]
 #clientes = Clientes.objects.all().order_by('nombre', 'altura')
 #clientes = Clientes.objects.all()
 #clientes = Clientes.objects.filter(apellido='ALONSO')
-#clientes = Clientes.objects.filter(cod_cliente__gte=5) <=
+#clientes = Clientes.objects.filter(cod_cliente__gte=5) <=#clientes = Clientes.objects.filter(cod_cliente__gte=5) <=
 #clientes = Clientes.objects.filter(cod_cliente__lt=10) >
 #clientes = Clientes.objects.filter(apellido__startswith = 'A')
 #clientes = Clientes.objects.filter(nombre__startswith = 'A', cod_condicion_iva__gte=2 )
