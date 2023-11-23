@@ -291,7 +291,7 @@ def getEmployeeById(request, pk):
 #ESTRUCTURAS
 @api_view(['GET'])
 def getEstructura(request):
-    customers = Customers.objects.all()
+    customers = Customers.objects.filter(contactname__startswith = 'C')
     estructura = {"id":0,
                 "nombre":None,
                 "nombre compañia":None,
@@ -305,7 +305,7 @@ def getEstructura(request):
             "telefono": customer.phone}
         resultados.append(resultado)
     
-    serializado = FechaSerializer(resultados,many = True)
+    serializado = EstructuraSerializer(resultados,many = True)
     return Response(serializado.data,status=status.HTTP_200_OK)
 
 #FECHA RANGOS

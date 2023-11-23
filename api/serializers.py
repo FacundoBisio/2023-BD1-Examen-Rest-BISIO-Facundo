@@ -46,7 +46,7 @@ class EmployeeSerializer (SerializadorPadre):
       model = Employees
       fields = '__all__'
 
-class FechaSerializer(serializers.Serializer):
+class EstructuraSerializer(serializers.Serializer):
     id = serializers.CharField(max_length=5)
     nombre = serializers.CharField(max_length=50)
     nombre_compañia = serializers.CharField(max_length=50)
