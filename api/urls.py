@@ -32,5 +32,6 @@ urlpatterns = [
     path('update/', updateFiltro),
 
     #examen
-    path('prueba1/', getEmployees)
+    path('prueba1/', pruebaPunto1),
+    path('prueba2/', pruebaPunto2)
 ]

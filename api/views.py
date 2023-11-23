@@ -1,5 +1,6 @@
 from django.utils import timezone
-from datetime import datetime
+
+from datetime import datetime, timedelta
 from .serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -359,7 +360,6 @@ def probandoFiltro3(request):
 def updateFiltro(request):
     letra = request.query_params.get("letter")
     year = request.query_params.get("year")
-
     empleadosFiltrados = Employees.objects.filter(firstname__icontains = letra)
     resultados = []
     for e in empleadosFiltrados:
@@ -381,64 +381,54 @@ def updateFiltro(request):
 
 # Obtener todos los Empleados dados una Categoría (Categories.CategoryID) y una cantidad esperada de ganancias.
 @api_view(["GET"])
-def getEmployees(request):
-    category_id = request.GET.get('categoryid')
-    ventas_min = request.GET.get('ventasmin')
+@api_view(['GET'])
+def pruebaPunto1(request):
+    categoria = request.query_params.get("categoryid")
+    cantidadEsperada = float(request.query_params.get("cantidad", 0))
 
-    try:
-        
-        category = YourCategoryModel.objects.get(CategoryID=category_id)
-    except YourCategoryModel.DoesNotExist:
-        return JsonResponse({"error": "Categoría no encontrada"}, status=404)
+    if not Categories.objects.filter(categoryid=categoria).exists():
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
-    
-    end_date = datetime.now().replace(day=1) - timedelta(days=1)
-    start_date = end_date - timedelta(days=90)
+    detalles_ordenes = Orderdetails.objects.filter(
+        productid__categoryid=categoria,
+    )
 
-    
-    Employees = Employees.objects.filter(
-        orders__orderdetails__product__category=category,
-        orders__orderdetails__unitprice__gt=0,
-        orders__orderdetails__quantity__gt=0,
-        orders__orderdate__range=[start_date, end_date]
-    ).annotate(ganancias_totales=Sum('orders__orderdetails__unitprice' * 'orders__orderdetails__quantity'))
+    resultados = []
+    for detalle in detalles_ordenes:
+        empleado = detalle.orderid.employeeid
+        ganancias_totales = detalles_ordenes.filter(
+            orderid__employeeid=empleado
+        ).aggregate(Sum(int('quantity') * int('unitprice')))['quantity__sum']
 
-    Employees = Employees.filter(ganancias_totales__gt=ventas_min)
-
-    if Employees.exists():
-        
-        Employees = Employees.order_by('-ganancias_totales')
-
-        
-        response_data = [
-            {
-                "EmployeeID": employee.EmployeeID,
-                "NombreCompleto": employee.full_name(),
-                "GananciasTotales": employee.ganancias_totales,
-                "HireDate": employee.hiredate
+        if ganancias_totales >= cantidadEsperada:
+            resultado = {
+                "id": empleado.employeeid,
+                "nombre": f"{empleado.firstname} {empleado.lastname}",
+                "GananciasTotales": ganancias_totales,
+                "HireDate": empleado.hiredate,
             }
-            for employee in employees
-        ]
+            resultados.append(resultado)
 
-        return JsonResponse(response_data, status=200)
-    else:
-        return JsonResponse({}, status=204)
+    if not resultados:
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
+    serializados = Punto1Serializer(resultados, many=True)
+    return Response(serializados.data)
 
 
 @api_view(["POST", "PUT"])
-def update_products(request):
-    fecha_inicio = request.POST.get('fechaInicio')
-    category_id = request.POST.get('CategoryID')
-    ventas_requeridas = request.POST.get('ventasRequeridas')
-    aumento = request.POST.get('aumento')
-    shipper_id = request.POST.get('ShipperID')
+def pruebaPunto2(request):
+    fecha_inicio = request.query_params('fechaInicio')
+    category_id = request.query_params('Categoryid')
+    ventas_requeridas = request.query_params('ventasRequeridas')
+    aumento = request.query_params('aumento')
+    shipper_id = request.query_params('shipperid')
 
     try:
-        category = Category.objects.get(CategoryID=category_id)
-        shipper = Shipper.objects.get(ShipperID=shipper_id)
+        category = Category.objects.get(categoryid=category_id)
+        shipper = Shipper.objects.get(shipperid=shipper_id)
     except (Category.DoesNotExist, Shipper.DoesNotExist):
-        return JsonResponse({"error": "Categoría o Shipper no encontrados"}, status=404)
+        return JsonResponse({"error": "Categoría o Shipper no encontrados"}, status=status.HTTP_404_NOT_FOUND)
 
     
     products = Product.objects.filter(
@@ -461,27 +451,23 @@ def update_products(request):
             if shipper.name.startswith('United'):
                 product.ganancia = product.unitprice * product.ventas_totales * 0.8
 
-
             product.save()
 
-        response_data = [
+        resultado_products = [
             {
                 "ProductID": product.ProductID,
                 "Category": {
                     "CategoryID": product.category.CategoryID,
                     "CategoryName": product.category.CategoryName,
-                  
                 },
-                
                 "PreviousPrice": product.unitprice / (1 + aumento),
                 "PercentageIncrease": aumento * 100,
             }
             for product in products
         ]
-
-        return Response(response_data, status=200)
+        return Response(resultado_products, status=status.HTTP_200_OK)
     else:
-        return Response({}, status=204)
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
 #clientes = Clientes.objects.all()[:4]

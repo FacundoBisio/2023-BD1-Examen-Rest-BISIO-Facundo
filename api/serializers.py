@@ -61,9 +61,10 @@ class TodoSerializer (SerializadorPadre):
 
 class Punto1Serializer(serializers.Serializer):
    id = serializers.IntegerField()
-   apellido = serializers.CharField()
    nombre = serializers.CharField()
-   birthdate = serializers.DateTimeField()
+   GananciaTotales = serializers.IntegerField()
+   HireDate = serializers.DateTimeField()
+
 
 class Filtro4Serializer(serializers.Serializer):
    id = serializers.IntegerField()
