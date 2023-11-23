@@ -22,7 +22,7 @@ class CategorieSerializer (SerializadorPadre):
       fields = '__all__'
 
 class ProductSerializer (SerializadorPadre):
-   supplierid = SupplierSerializer(many=False,required=False)
+   supplierid = SupplierSerializer(many=False, required=False)
    categoryid = CategorieSerializer(many=False, required=False)
 
    class Meta:
@@ -46,8 +46,15 @@ class EmployeeSerializer (SerializadorPadre):
       model = Employees
       fields = '__all__'
 
-class Punto1Serializer(serializers.Serializer):
+class FechaSerializer(serializers.Serializer):
     id = serializers.CharField(max_length=5)
     nombre = serializers.CharField(max_length=50)
     nombre_compañia = serializers.CharField(max_length=50)
     telefono = serializers.CharField(max_length=20)
+
+
+class Punto1Serializer(serializers.Serializer):
+   id = serializers.IntegerField()
+   apellido = serializers.CharField()
+   nombre = serializers.CharField()
+   birthdate = serializers.DateTimeField()

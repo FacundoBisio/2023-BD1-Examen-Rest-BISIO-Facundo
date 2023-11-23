@@ -18,12 +18,14 @@ urlpatterns = [
     path("order/<str:pk>/", getOrderById, name="getOrderById"),
 
     path("orderdetail/", getAllOrderDetails, name="getAllOrderDetails"),
-    path("orderdetail/<str:pk>/", getOrderDetailById, name="getOrderDetailById"),
+    path("orderdetail/<str:pk>/<str:pk2>", getOrderDetailById, name="getOrderDetailById"),
+
 
     path("employee/", getAllEmployees, name="getAllEmployees"),
     path("employee/<str:pk>/", getEmployeeById, name="getEmployeeById"),
 
     #pruebas
-    path('examen/punto1', punto1),
-    path('examen/fecha', getOrderByDate),
+    path('examen/estructura/', getEstructura),
+    path('examen/fecha/', getOrderByDate),
+    path('examen/punto1/', punto1),
 ]

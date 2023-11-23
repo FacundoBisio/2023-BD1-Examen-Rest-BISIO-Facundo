@@ -28,9 +28,9 @@ def getRoutes(request):
 @api_view(["GET", "POST"])
 def getAllCustomers(request):
     if request.method == "GET":
-        customers = Customers.objects.all()       
-        #customers = Customers.objects.filter(contactname__startswith = 'M').order_by('contacttitle')[:4]
-        #customers = Customers.objects.filter(contactname__startswith = 'A', contacttitle = 'Owner')
+        customers = Customers.objects.all()
+        #customers = Customers.objects.filter(contactname__startswith = 'M').order_by('contacttitle')[:3]
+        #customers = Customers.objects.filter(contacttitle = 'Owner')[3:6]
         customersSerializers = CustomerSerializer(customers, many=True)
         return Response(customersSerializers.data, status=status.HTTP_200_OK)
     elif request.method == "POST":
@@ -52,12 +52,13 @@ def getCustomerById(request, pk):
     if request.method == 'PUT':
 
         request.data['customerid'] = pk
-        request.data['companyname'] = customer.companyname 
-    
+        if 'companyname' not in request.data:
+            request.data['companyname'] = customer.companyname
+
         serializer = CustomerSerializer(customer, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     if request.method == 'DELETE':
         customer.delete()
@@ -137,8 +138,9 @@ def getCategoryById(request, pk):
 @api_view(["GET", "POST"])
 def getAllProducts(request):
     if request.method == "GET":
-        #products = Products.objects.all()         
-        products = Products.objects.filter(supplierid__companyname__startswith = 'F')[:2]
+        products = Products.objects.all()         
+        #products = Products.objects.filter(categoryid__categoryname__startswith = 'C')   
+        #products = Products.objects.filter(supplierid__companyname__startswith = 'F')[:2]
         productSerializers = ProductSerializer(products, many=True)
         return Response(productSerializers.data, status=status.HTTP_200_OK)
     elif request.method == "POST":
@@ -225,9 +227,9 @@ def getAllOrderDetails(request):
         return Response(orderDetailNuevo.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(["GET", "PUT", "DELETE"])
-def getOrderDetailById(request, pk):
+def getOrderDetailById(request, pk, pk2):
     try:
-        order_detail = Orderdetails.objects.get(orderid=pk)
+        order_detail = Orderdetails.objects.get(orderid=pk, productid=pk2)
     except Exception:
         return Response(status=status.HTTP_204_NO_CONTENT)
     
@@ -288,7 +290,7 @@ def getEmployeeById(request, pk):
 # ---------------------------------------- PRUEBAS -------------------------------------------
 #ESTRUCTURAS
 @api_view(['GET'])
-def punto1(request):
+def getEstructura(request):
     customers = Customers.objects.all()
     estructura = {"id":0,
                 "nombre":None,
@@ -303,7 +305,7 @@ def punto1(request):
             "telefono": customer.phone}
         resultados.append(resultado)
     
-    serializado = Punto1Serializer(resultados,many = True)
+    serializado = FechaSerializer(resultados,many = True)
     return Response(serializado.data,status=status.HTTP_200_OK)
 
 #FECHA RANGOS
@@ -320,15 +322,35 @@ def getOrderByDate(request):
     serializados = OrderSerializer(orders, many=True)
     return Response(serializados.data, status=status.HTTP_200_OK)
 
+#
+@api_view(['GET'])
+def punto1(request):
+    letra = request.query_params.get("letter")
+    year = request.query_params.get("year")
+
+    empleadosFiltrados = Employees.objects.filter(firstname__icontains = letra)
+    resultados = []
+    for e in empleadosFiltrados:
+        resultado = {
+            "id" : e.employeeid,
+            "nombre" : e.firstname,
+            "apellido" : e.lastname,
+            "birthdate" : e.birthdate
+        }
+        if e.birthdate.year >= int(year):
+            resultados.append(resultado)
+    serializados = Punto1Serializer(resultados, many=True)
+    return Response(serializados.data)
+
+
 
 #clientes = Clientes.objects.all()[:4]
 #clientes = Clientes.objects.all().order_by('nombre', 'altura')
 #clientes = Clientes.objects.all()
 #clientes = Clientes.objects.filter(apellido='ALONSO')
-#clientes = Clientes.objects.filter(cod_cliente__gte=5)
-#clientes = Clientes.objects.filter(cod_cliente__lt=10)
+#clientes = Clientes.objects.filter(cod_cliente__gte=5) <=
+#clientes = Clientes.objects.filter(cod_cliente__lt=10) >
 #clientes = Clientes.objects.filter(apellido__startswith = 'A')
 #clientes = Clientes.objects.filter(nombre__startswith = 'A', cod_condicion_iva__gte=2 )
-#clientes = Clientes.objects.filter(Q(apellido__startswith = 'M') |Q(apellido__startswith = 'C') )
 #serializados = ClientesSerializer(clientes,many = True)
 #return Response(serializados.data)
