@@ -25,7 +25,9 @@ urlpatterns = [
     path("employee/<str:pk>/", getEmployeeById, name="getEmployeeById"),
 
     #pruebas
-    path('examen/estructura/', getEstructura),
-    path('examen/fecha/', getOrderByDate),
-    path('examen/punto1/', punto1),
+    path('estructura/', getEstructura),
+    path('fecha/', getOrderByDate),
+    path('punto1/', punto1),
+    path('filtro3/', filtro3),
+    path('update/', updateFiltro),
 ]

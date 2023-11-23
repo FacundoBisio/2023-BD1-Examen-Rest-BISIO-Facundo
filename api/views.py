@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse, JsonResponse
 from .models import Customers, Suppliers, Categories, Products, Orders, Orderdetails, Employees
+from django.db.models import Q
 
 @api_view(['GET'])
 def getRoutes(request):
@@ -267,7 +268,7 @@ def getAllEmployees(request):
 @api_view(["GET", "PUT", "DELETE"])
 def getEmployeeById(request, pk):
     try:
-        employee = Employees.objects.get(employee_id=pk)
+        employee = Employees.objects.get(employeeid=pk)
     except Exception:
         return Response(status=status.HTTP_204_NO_CONTENT)
     
@@ -276,7 +277,7 @@ def getEmployeeById(request, pk):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     if request.method == 'PUT':
-        request.data['employee_id'] = pk
+        request.data['employeeid'] = pk
         serializer = EmployeeSerializer(employee, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -342,6 +343,40 @@ def punto1(request):
     serializados = Punto1Serializer(resultados, many=True)
     return Response(serializados.data)
 
+@api_view(["GET", 'UPDATE'])
+def filtro3(request):
+
+    employees = Employees.objects.filter(Q(country__icontains='a') | Q(country__icontains='e') | Q(country__icontains='i') | Q(country__icontains='o') | Q(country__icontains='u'), salary__gt=2800, birthdate__lt=datetime(1990, 1, 1))
+
+    employees.update(salary=5555)
+
+    employeeSerializers = EmployeeSerializer(employees, many=True)
+    return Response(employeeSerializers.data, status=status.HTTP_200_OK)
+
+
+@api_view(["GET", 'UPDATE'])
+def updateFiltro(request):
+    letra = request.query_params.get("letter")
+    year = request.query_params.get("year")
+
+    empleadosFiltrados = Employees.objects.filter(firstname__icontains = letra)
+    resultados = []
+    for e in empleadosFiltrados:
+        resultado = {
+            "id" : e.employeeid,
+            "nombre" : e.firstname,
+            "apellido" : e.lastname,
+            "birthdate" : e.birthdate,
+            "country" : e.country,
+            "newCountry" : request.query_params.get("newCountry"),
+        }
+        if e.birthdate.year >= int(year):
+            resultados.append(resultado)
+            e.country = request.query_params.get("newCountry")
+            e.save()
+
+    serializados = Filtro4Serializer(resultados, many=True)
+    return Response(serializados.data)
 
 
 #clientes = Clientes.objects.all()[:4]
